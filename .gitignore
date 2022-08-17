@@ -140,3 +140,8 @@ node_modules
 *.rdb
 *.webm
 *hars
+
+# app specific
+suite_results
+df_test
+df_train
