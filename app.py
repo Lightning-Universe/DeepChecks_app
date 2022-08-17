@@ -9,7 +9,11 @@ from deepchecks.tabular.datasets.classification.adult import (
     _target,
     load_fitted_model,
 )
-from deepchecks.tabular.suites import data_integrity, model_evaluation
+from deepchecks.tabular.suites import (
+    data_integrity,
+    model_evaluation,
+    train_test_validation,
+)
 from lightning.app.storage import Path, Payload
 from lightning.app.structures import List
 
@@ -64,6 +68,34 @@ class DataIntegrityCheck(L.LightningWork):
         print("Finished data integrity check.")
 
 
+class TrainTestValidation(L.LightningWork):
+    def __init__(self):
+        super().__init__()
+        self.dir_path = "suite_results"
+        self.train_test_validation_results_path = None
+
+    def run(self, df_train: Payload, df_test: Payload):
+        print("Starting train test validation suite...")
+        df_train = Dataset(df_train.value, label=_target, cat_features=_CAT_FEATURES)
+        df_test = Dataset(df_test.value, label=_target, cat_features=_CAT_FEATURES)
+
+        train_test_validation_results = train_test_validation().run(df_train, df_test)
+
+        os.makedirs(self.dir_path, exist_ok=True)
+
+        run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        train_test_validation_results_path = os.path.join(
+            self.dir_path, f"train_test_validation_{run_time}.html"
+        )
+
+        train_test_validation_results.save_as_html(train_test_validation_results_path)
+
+        self.train_test_validation_results_path = Path(
+            train_test_validation_results_path
+        )
+        print("Finished train test validation suite.")
+
+
 class ModelEvaluation(L.LightningWork):
     def __init__(self):
         super().__init__()
@@ -103,7 +135,10 @@ class DAG(L.LightningFlow):
         # Step 2: Create a work for data integrity check
         self.data_integrity_check = DataIntegrityCheck()
 
-        # Step 3: Create a work for model evaluation
+        # Step 3: Create a work for train test validation suite
+        self.train_test_validation = TrainTestValidation()
+
+        # Step 4: Create a work for model evaluation
         self.model_evaluation = ModelEvaluation()
 
         self.has_completed = False
@@ -119,13 +154,19 @@ class DAG(L.LightningFlow):
         )
         self.data_integrity_check.stop()
 
-        # Step 3: Start model evaluation
+        # Step 3: Run the train test validation suite
+        self.train_test_validation.run(
+            df_train=self.data_collector.df_train,
+            df_test=self.data_collector.df_test,
+        )
+        self.train_test_validation.stop()
+
+        # Step 4: Start model evaluation
         self.model_evaluation.run(
             df_train=self.data_collector.df_train,
             df_test=self.data_collector.df_test,
         )
         if self.model_evaluation.evaluation_results_path:
-            print(self.model_evaluation.evaluation_results_path)
             self.has_completed = True
 
 
@@ -139,8 +180,8 @@ class ScheduledDAG(L.LightningFlow):
     def run(self):
         """Example of scheduling an infinite number of DAG runs continuously."""
 
-        # Step 1: Every minute, create and launch a new DAG.
-        if self.schedule("* * * * *"):
+        # Step 1: Every hour, create and launch a new DAG.
+        if self.schedule("0 * * * *"):
             print("Launching a new DAG")
             self.dags.append(self._dag_cls(**self.dag_kwargs))
 
