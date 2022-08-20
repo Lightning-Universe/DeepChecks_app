@@ -1,2 +1,3 @@
 lightning
 deepchecks
+streamlit==1.11.1
