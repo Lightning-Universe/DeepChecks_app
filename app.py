@@ -1,7 +1,7 @@
 import lightning as L
 from lightning.app.structures import List
 
-from lightning_deepchecks import (
+from lightning_deepchecks.scheduled_dag.components import (
     DataIntegrityCheck,
     GetDataWork,
     ModelEvaluation,
