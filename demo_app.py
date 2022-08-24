@@ -1,9 +1,11 @@
 import deepchecks
 import lightning as L
 import streamlit as st
+import streamlit.components.v1 as components
 from deepchecks.tabular import Dataset, datasets
 from deepchecks.vision import datasets
 from lightning.app.frontend.stream_lit import StreamlitFrontend
+from lightning.app.structures import List
 
 from lightning_deepchecks.demo.components import (
     DataIntegrityCheck,
@@ -23,6 +25,7 @@ class DeepchecksSuites(L.LightningFlow):
         self.data_integrity_check = DataIntegrityCheck()
         self.train_test_validation = TrainTestValidation()
         self.model_evaluation = ModelEvaluation()
+        self.suites = List()
 
     def run(self, config: dict):
         self.data_collector.run(config)
@@ -36,17 +39,14 @@ class DeepchecksSuites(L.LightningFlow):
                 self.data_integrity_check.run(
                     self.data_collector.df_train, self.data_collector.df_test, config
                 )
-                self.data_integrity_check.stop()
             elif suite == "Train Test Validation":
                 self.train_test_validation.run(
                     self.data_collector.df_train, self.data_collector.df_test, config
                 )
-                self.train_test_validation.stop()
             elif suite == "Model Evaluation":
                 self.model_evaluation.run(
                     self.data_collector.df_train, self.data_collector.df_test, config
                 )
-                self.model_evaluation.stop()
 
 
 class DeepchecksFlow(L.LightningFlow):
@@ -54,13 +54,15 @@ class DeepchecksFlow(L.LightningFlow):
         super().__init__()
         self.deepchecks_config = None
         self.deepchecks_suites = DeepchecksSuites()
+        self.processed = False
 
     def run(self):
         if self.deepchecks_config is not None:
             self.deepchecks_suites.run(
                 config=self.deepchecks_config,
             )
-        pass
+            self.deepchecks_config = None
+            self.processed = True
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_deepchecks_flow)
@@ -117,23 +119,46 @@ def render_deepchecks_flow(state):
             "dataset": dataset,
             "suites": suites,
         }
+        state.processed = False
+
         # st.write(state.deepchecks_config)
 
-    selected_suites = st.selectbox("View Suite Results For", SUITES)
+    selected_suite = st.selectbox("View Suite Results For", suites)
 
-    import streamlit.components.v1 as components
+    # st.write(state.deepchecks_suites.data_integrity_check.train_results_path)
 
-    result = open("output.html").read()
+    display_results = None
 
-    TEMPLATE_WRAPPER = """
-    <div style="height:{height}px;overflow-y:auto;position:relative;">
-        {body}
-    </div>
-    """
+    if (
+        selected_suite == "Data Integrity"
+        and state.deepchecks_suites.data_integrity_check.processed
+    ):
+        display_results = (
+            state.deepchecks_suites.data_integrity_check.train_results_path
+        )
+    elif (
+        selected_suite == "Train Test Validation"
+        and state.deepchecks_suites.train_test_validation.processed
+    ):
+        display_results = state.deepchecks_suites.train_test_validation.results_path
+    elif (
+        selected_suite == "Model Evaluation"
+        and state.deepchecks_suites.model_evaluation.processed
+    ):
+        display_results = state.deepchecks_suites.model_evaluation.results_path
 
-    components.html(
-        TEMPLATE_WRAPPER.format(body=result, height=1000), height=1000, width=1000
-    )
+    if display_results is not None:
+        result = open(display_results).read()
+
+        TEMPLATE_WRAPPER = """
+        <div style="height:{height}px;overflow-y:auto;position:relative;">
+            {body}
+        </div>
+        """
+
+        components.html(
+            TEMPLATE_WRAPPER.format(body=result, height=1000), height=1000, width=1000
+        )
 
 
 app = L.LightningApp(DeepchecksFlow())
