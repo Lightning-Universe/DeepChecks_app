@@ -19,9 +19,17 @@ class GetDataWork(L.LightningWork):
 
     def run(self, config: dict):
         print(f"Starting {config['dataset']} data collection...")
-        df_train, df_test = eval(
-            f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_data(data_format='Dataframe')"
-        )
+        if config["domain"] == "vision":
+            df_train = eval(
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_dataset(train=True, object_type='VisionData')"
+            )
+            df_test = eval(
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_dataset(train=True, object_type='VisionData')"
+            )
+        else:
+            df_train, df_test = eval(
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_data(data_format='Dataframe')"
+            )
         self.df_train = Payload(df_train)
         self.df_test = Payload(df_test)
         print(self.df_train.value)
@@ -47,17 +55,19 @@ class DataIntegrityCheck(L.LightningWork):
         deepchecks_module = importlib.import_module(
             f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
         )
-
-        df_train = Dataset(
-            df_train.value,
-            label=deepchecks_module._target,
-            cat_features=deepchecks_module._CAT_FEATURES,
-        )
-        df_test = Dataset(
-            df_test.value,
-            label=deepchecks_module._target,
-            cat_features=deepchecks_module._CAT_FEATURES,
-        )
+        if config["domain"] == "vision":
+            df_train, df_test = df_train.value, df_test.value
+        else:
+            df_train = Dataset(
+                df_train.value,
+                label=deepchecks_module._target,
+                cat_features=deepchecks_module._CAT_FEATURES,
+            )
+            df_test = Dataset(
+                df_test.value,
+                label=deepchecks_module._target,
+                cat_features=deepchecks_module._CAT_FEATURES,
+            )
 
         train_results = deepchecks_suites_module.data_integrity().run(df_train)
         test_results = deepchecks_suites_module.data_integrity().run(df_test)
@@ -101,16 +111,19 @@ class TrainTestValidation(L.LightningWork):
             f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
         )
 
-        df_train = Dataset(
-            df_train.value,
-            label=deepchecks_module._target,
-            cat_features=deepchecks_module._CAT_FEATURES,
-        )
-        df_test = Dataset(
-            df_test.value,
-            label=deepchecks_module._target,
-            cat_features=deepchecks_module._CAT_FEATURES,
-        )
+        if config["domain"] == "vision":
+            df_train, df_test = df_train.value, df_test.value
+        else:
+            df_train = Dataset(
+                df_train.value,
+                label=deepchecks_module._target,
+                cat_features=deepchecks_module._CAT_FEATURES,
+            )
+            df_test = Dataset(
+                df_test.value,
+                label=deepchecks_module._target,
+                cat_features=deepchecks_module._CAT_FEATURES,
+            )
 
         train_test_validation_results = (
             deepchecks_suites_module.train_test_validation().run(df_train, df_test)
@@ -143,6 +156,26 @@ class ModelEvaluation(L.LightningWork):
         self.results_path = None
         self.processed = False
 
+        if config["dataset"] == "coco":
+            ## TODO: fix this
+            results = (
+                "<h1>Model Evaluation Suite for COCO dataset is not supported yet.</h1>"
+            )
+            os.makedirs(self.dir_path, exist_ok=True)
+
+            run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            results_path = os.path.join(
+                self.dir_path, f"{config['dataset']}_model_evaluation_{run_time}.html"
+            )
+            with open(results_path, "w") as file:
+                file.write(results)
+
+            self.results_path = Path(results_path)
+            self.processed = True
+
+            print("Finished model evaluation suite.")
+            return
+
         deepchecks_suites_module = importlib.import_module(
             f"deepchecks.{config['domain']}.suites"
         )
@@ -151,18 +184,22 @@ class ModelEvaluation(L.LightningWork):
             f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
         )
 
-        model = deepchecks_module.load_fitted_model()
+        if config["domain"] == "vision":
+            model = deepchecks_module.load_model()
+            df_train, df_test = df_train.value, df_test.value
+        else:
+            model = deepchecks_module.load_fitted_model()
 
-        df_train = Dataset(
-            df_train.value,
-            label=deepchecks_module._target,
-            cat_features=deepchecks_module._CAT_FEATURES,
-        )
-        df_test = Dataset(
-            df_test.value,
-            label=deepchecks_module._target,
-            cat_features=deepchecks_module._CAT_FEATURES,
-        )
+            df_train = Dataset(
+                df_train.value,
+                label=deepchecks_module._target,
+                cat_features=deepchecks_module._CAT_FEATURES,
+            )
+            df_test = Dataset(
+                df_test.value,
+                label=deepchecks_module._target,
+                cat_features=deepchecks_module._CAT_FEATURES,
+            )
 
         evaluation_results = deepchecks_suites_module.model_evaluation().run(
             df_train, df_test, model

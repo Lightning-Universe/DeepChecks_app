@@ -2,7 +2,7 @@ import deepchecks
 import lightning as L
 import streamlit as st
 import streamlit.components.v1 as components
-from deepchecks.tabular import Dataset, datasets
+from deepchecks.tabular import datasets
 from deepchecks.vision import datasets
 from lightning.app.frontend.stream_lit import StreamlitFrontend
 from lightning.app.structures import List
@@ -79,6 +79,10 @@ def get_datasets(domain: str):
     for algo in ALGOS:
         DATASETS[algo] = eval(f"{DATASETS_MODULE}.{algo}.__all__")
 
+    ## TODO: add support for YOLO Dataset as well
+    if domain == "Vision":
+        DATASETS["detection"] = ["coco"]
+
     return DATASETS
 
 
@@ -98,15 +102,10 @@ def render_deepchecks_flow(state):
     ]
 
     dataset = st.sidebar.selectbox("Select a dataset", datasets)
-
-    # st.write(domain)
-    # st.write(dataset)
-
     suites = st.sidebar.multiselect("Select suites", SUITES, default=SUITES)
 
     run = st.sidebar.button("Run", disabled=not bool(suites))
 
-    # st.write(run)
     if run:
         algo = None
         for dc_algo, datasets in algo_datasets.items():
@@ -121,11 +120,7 @@ def render_deepchecks_flow(state):
         }
         state.processed = False
 
-        # st.write(state.deepchecks_config)
-
     selected_suite = st.selectbox("View Suite Results For", suites)
-
-    # st.write(state.deepchecks_suites.data_integrity_check.train_results_path)
 
     display_results = None
 
