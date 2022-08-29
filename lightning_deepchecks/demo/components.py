@@ -1,11 +1,23 @@
 import importlib
 import os
+from dataclasses import dataclass
 from datetime import datetime
 
 import deepchecks
 import lightning as L
 from deepchecks.tabular import Dataset
+from lightning.app import BuildConfig
 from lightning.app.storage import Path, Payload
+
+
+@dataclass
+class CustomBuildConfig(BuildConfig):
+    def build_commands(self):
+        return [
+            "pip uninstall -y opencv-python",
+            "pip uninstall -y opencv-python-headless",
+            "pip install opencv-python-headless==4.5.5.64",
+        ]
 
 
 class GetDataWork(L.LightningWork):
@@ -13,11 +25,16 @@ class GetDataWork(L.LightningWork):
     """This component is responsible to download some data and store them with a PayLoad."""
 
     def __init__(self):
-        super().__init__()
+        cloud_build_config = CustomBuildConfig()
+
+        super().__init__(cloud_build_config=cloud_build_config)
         self.df_train = None
         self.df_test = None
 
     def run(self, config: dict):
+        from deepchecks.tabular import datasets
+        from deepchecks.vision import datasets
+
         print(f"Starting {config['dataset']} data collection...")
         if config["domain"] == "vision":
             df_train = eval(
@@ -38,13 +55,18 @@ class GetDataWork(L.LightningWork):
 
 class DataIntegrityCheck(L.LightningWork):
     def __init__(self):
-        super().__init__()
+        cloud_build_config = CustomBuildConfig()
+
+        super().__init__(cloud_build_config=cloud_build_config)
         self.dir_path = "suite_results"
         self.train_results_path = None
         self.test_results_path = None
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
+        from deepchecks.tabular import datasets
+        from deepchecks.vision import datasets
+
         print(f"Starting {config['dataset']} Data Integrity Check....")
         self.train_results_path, self.test_results_path = None, None
         self.processed = False
@@ -85,8 +107,11 @@ class DataIntegrityCheck(L.LightningWork):
         train_results.save_as_html(train_results_path, as_widget=False)
         test_results.save_as_html(test_results_path, as_widget=False)
 
-        self.train_results_path = Path(train_results_path)
-        self.test_results_path = Path(test_results_path)
+        with open(train_results_path, encoding="utf-8") as f:
+            self.train_results_path = f.read()
+
+        with open(test_results_path, encoding="utf-8") as f:
+            self.test_results_path = f.read()
 
         self.processed = True
         print("Finished data integrity check.")
@@ -94,12 +119,17 @@ class DataIntegrityCheck(L.LightningWork):
 
 class TrainTestValidation(L.LightningWork):
     def __init__(self):
-        super().__init__()
+        cloud_build_config = CustomBuildConfig()
+
+        super().__init__(cloud_build_config=cloud_build_config)
         self.dir_path = "suite_results"
         self.results_path = None
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
+        from deepchecks.tabular import datasets
+        from deepchecks.vision import datasets
+
         print(f"Starting {config['dataset']} train test validation suite...")
         self.results_path = None
         self.processed = False
@@ -138,7 +168,9 @@ class TrainTestValidation(L.LightningWork):
 
         train_test_validation_results.save_as_html(results_path, as_widget=False)
 
-        self.results_path = Path(results_path)
+        with open(results_path, encoding="utf-8") as f:
+            self.results_path = f.read()
+
         self.processed = True
 
         print("Finished train test validation suite.")
@@ -146,12 +178,17 @@ class TrainTestValidation(L.LightningWork):
 
 class ModelEvaluation(L.LightningWork):
     def __init__(self):
-        super().__init__()
+        cloud_build_config = CustomBuildConfig()
+
+        super().__init__(cloud_build_config=cloud_build_config)
         self.dir_path = "suite_results"
         self.results_path = None
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
+        from deepchecks.tabular import datasets
+        from deepchecks.vision import datasets
+
         print(f"Starting {config['dataset']} model evaluation suite...")
         self.results_path = None
         self.processed = False
@@ -170,7 +207,7 @@ class ModelEvaluation(L.LightningWork):
             with open(results_path, "w") as file:
                 file.write(results)
 
-            self.results_path = Path(results_path)
+            self.results_path = results
             self.processed = True
 
             print("Finished model evaluation suite.")
@@ -213,7 +250,8 @@ class ModelEvaluation(L.LightningWork):
         )
 
         evaluation_results.save_as_html(results_path, as_widget=False)
-        self.results_path = Path(results_path)
+        with open(results_path, encoding="utf-8") as f:
+            self.results_path = f.read()
         self.processed = True
 
         print("Finished model evaluation suite.")

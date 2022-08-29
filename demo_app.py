@@ -2,8 +2,6 @@ import deepchecks
 import lightning as L
 import streamlit as st
 import streamlit.components.v1 as components
-from deepchecks.tabular import datasets
-from deepchecks.vision import datasets
 from lightning.app.frontend.stream_lit import StreamlitFrontend
 from lightning.app.structures import List
 
@@ -16,6 +14,23 @@ from lightning_deepchecks.demo.components import (
 
 DOMAINS = ["Tabular", "Vision"]
 SUITES = ["Data Integrity", "Train Test Validation", "Model Evaluation"]
+
+DATASETS = {
+    "Tabular": {
+        "classification": [
+            "iris",
+            "breast_cancer",
+            "phishing",
+            "adult",
+            "lending_club",
+        ],
+        "regression": ["avocado", "wine_quality"],
+    },
+    "Vision": {
+        "classification": ["mnist"],
+        "detection": ["coco"],
+    },
+}
 
 
 class DeepchecksSuites(L.LightningFlow):
@@ -68,22 +83,22 @@ class DeepchecksFlow(L.LightningFlow):
         return StreamlitFrontend(render_fn=render_deepchecks_flow)
 
 
-def get_datasets(domain: str):
-    if domain not in DOMAINS:
-        raise ValueError(f"{domain} is not supported. Supported domains are {DOMAINS}")
+# def get_datasets(domain: str):
+#     if domain not in DOMAINS:
+#         raise ValueError(f"{domain} is not supported. Supported domains are {DOMAINS}")
 
-    DATASETS_MODULE = f"deepchecks.{domain.lower()}.datasets"
-    ALGOS = eval(f"{DATASETS_MODULE}.__all__")
+#     DATASETS_MODULE = f"deepchecks.{domain.lower()}.datasets"
+#     ALGOS = eval(f"{DATASETS_MODULE}.__all__")
 
-    DATASETS = {}
-    for algo in ALGOS:
-        DATASETS[algo] = eval(f"{DATASETS_MODULE}.{algo}.__all__")
+#     DATASETS = {}
+#     for algo in ALGOS:
+#         DATASETS[algo] = eval(f"{DATASETS_MODULE}.{algo}.__all__")
 
-    ## TODO: add support for YOLO Dataset as well
-    if domain == "Vision":
-        DATASETS["detection"] = ["coco"]
+#     ## TODO: add support for YOLO Dataset as well
+#     if domain == "Vision":
+#         DATASETS["detection"] = ["coco"]
 
-    return DATASETS
+#     return DATASETS
 
 
 def render_deepchecks_flow(state):
@@ -95,10 +110,10 @@ def render_deepchecks_flow(state):
 
     domain = st.sidebar.selectbox("Select a domain", DOMAINS, index=0)
 
-    algo_datasets = get_datasets(domain)
-
     datasets = [
-        dataset for dataset_list in algo_datasets.values() for dataset in dataset_list
+        dataset
+        for dataset_list in DATASETS[domain].values()
+        for dataset in dataset_list
     ]
 
     dataset = st.sidebar.selectbox("Select a dataset", datasets)
@@ -108,7 +123,7 @@ def render_deepchecks_flow(state):
 
     if run:
         algo = None
-        for dc_algo, datasets in algo_datasets.items():
+        for dc_algo, datasets in DATASETS[domain].items():
             if dataset in datasets:
                 algo = dc_algo
                 break
@@ -143,7 +158,6 @@ def render_deepchecks_flow(state):
         display_results = state.deepchecks_suites.model_evaluation.results_path
 
     if display_results is not None:
-        result = open(display_results).read()
 
         TEMPLATE_WRAPPER = """
         <div style="height:{height}px;overflow-y:auto;position:relative;">
@@ -152,7 +166,9 @@ def render_deepchecks_flow(state):
         """
 
         components.html(
-            TEMPLATE_WRAPPER.format(body=result, height=1000), height=1000, width=1000
+            TEMPLATE_WRAPPER.format(body=display_results, height=1000),
+            height=1000,
+            width=1000,
         )
 
 
