@@ -102,7 +102,6 @@ class DeepchecksFlow(L.LightningFlow):
 
 
 def render_deepchecks_flow(state):
-
     st.title("Welcome to Deepchecks' Demo! :rocket:")
     st.caption(
         "Deepchecks is a Python package for comprehensively validating your machine learning models and data with minimal effort. Test Suites for Validating ML Models & Data."
@@ -158,7 +157,6 @@ def render_deepchecks_flow(state):
         display_results = state.deepchecks_suites.model_evaluation.results_path
 
     if display_results is not None:
-
         TEMPLATE_WRAPPER = """
         <div style="height:{height}px;overflow-y:auto;position:relative;">
             {body}

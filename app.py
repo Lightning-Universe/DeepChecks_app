@@ -10,7 +10,6 @@ from lightning_deepchecks.scheduled_dag.components import (
 
 
 class DeepchecksDAG(L.LightningFlow):
-
     """This flow is a DAG with Deepchecks components."""
 
     def __init__(self, **dag_kwargs):
@@ -65,7 +64,6 @@ class ScheduledDAG(L.LightningFlow):
 
     def run(self):
         """Example of scheduling an infinite number of DAG runs continuously."""
-
         # Step 1: Every hour, create and launch a new DAG.
         if self.schedule("0 * * * *"):
             print("Launching a new DAG")

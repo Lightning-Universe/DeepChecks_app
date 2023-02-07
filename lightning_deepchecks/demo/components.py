@@ -21,7 +21,6 @@ class CustomBuildConfig(BuildConfig):
 
 
 class GetDataWork(L.LightningWork):
-
     """This component is responsible to download some data and store them with a PayLoad."""
 
     def __init__(self):
