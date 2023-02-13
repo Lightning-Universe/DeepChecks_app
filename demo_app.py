@@ -1,16 +1,10 @@
-import deepchecks
 import lightning as L
 import streamlit as st
 import streamlit.components.v1 as components
 from lightning.app.frontend.stream_lit import StreamlitFrontend
 from lightning.app.structures import List
 
-from lightning_deepchecks.demo.components import (
-    DataIntegrityCheck,
-    GetDataWork,
-    ModelEvaluation,
-    TrainTestValidation,
-)
+from lightning_deepchecks.demo.components import DataIntegrityCheck, GetDataWork, ModelEvaluation, TrainTestValidation
 
 DOMAINS = ["Tabular", "Vision"]
 SUITES = ["Data Integrity", "Train Test Validation", "Model Evaluation"]
@@ -47,21 +41,13 @@ class DeepchecksSuites(L.LightningFlow):
 
         for suite in config["suites"]:
             if suite not in SUITES:
-                raise ValueError(
-                    f"{suite} is not supported. Supported suites are {SUITES}"
-                )
+                raise ValueError(f"{suite} is not supported. Supported suites are {SUITES}")
             if suite == "Data Integrity":
-                self.data_integrity_check.run(
-                    self.data_collector.df_train, self.data_collector.df_test, config
-                )
+                self.data_integrity_check.run(self.data_collector.df_train, self.data_collector.df_test, config)
             elif suite == "Train Test Validation":
-                self.train_test_validation.run(
-                    self.data_collector.df_train, self.data_collector.df_test, config
-                )
+                self.train_test_validation.run(self.data_collector.df_train, self.data_collector.df_test, config)
             elif suite == "Model Evaluation":
-                self.model_evaluation.run(
-                    self.data_collector.df_train, self.data_collector.df_test, config
-                )
+                self.model_evaluation.run(self.data_collector.df_train, self.data_collector.df_test, config)
 
 
 class DeepchecksFlow(L.LightningFlow):
@@ -104,16 +90,13 @@ class DeepchecksFlow(L.LightningFlow):
 def render_deepchecks_flow(state):
     st.title("Welcome to Deepchecks' Demo! :rocket:")
     st.caption(
-        "Deepchecks is a Python package for comprehensively validating your machine learning models and data with minimal effort. Test Suites for Validating ML Models & Data."
+        "Deepchecks is a Python package for comprehensively validating your machine learning models"
+        " and data with minimal effort. Test Suites for Validating ML Models & Data."
     )
 
     domain = st.sidebar.selectbox("Select a domain", DOMAINS, index=0)
 
-    datasets = [
-        dataset
-        for dataset_list in DATASETS[domain].values()
-        for dataset in dataset_list
-    ]
+    datasets = [dataset for dataset_list in DATASETS[domain].values() for dataset in dataset_list]
 
     dataset = st.sidebar.selectbox("Select a dataset", datasets)
     suites = st.sidebar.multiselect("Select suites", SUITES, default=SUITES)
@@ -138,22 +121,11 @@ def render_deepchecks_flow(state):
 
     display_results = None
 
-    if (
-        selected_suite == "Data Integrity"
-        and state.deepchecks_suites.data_integrity_check.processed
-    ):
-        display_results = (
-            state.deepchecks_suites.data_integrity_check.train_results_path
-        )
-    elif (
-        selected_suite == "Train Test Validation"
-        and state.deepchecks_suites.train_test_validation.processed
-    ):
+    if selected_suite == "Data Integrity" and state.deepchecks_suites.data_integrity_check.processed:
+        display_results = state.deepchecks_suites.data_integrity_check.train_results_path
+    elif selected_suite == "Train Test Validation" and state.deepchecks_suites.train_test_validation.processed:
         display_results = state.deepchecks_suites.train_test_validation.results_path
-    elif (
-        selected_suite == "Model Evaluation"
-        and state.deepchecks_suites.model_evaluation.processed
-    ):
+    elif selected_suite == "Model Evaluation" and state.deepchecks_suites.model_evaluation.processed:
         display_results = state.deepchecks_suites.model_evaluation.results_path
 
     if display_results is not None:
