@@ -30,18 +30,20 @@ class GetDataWork(L.LightningWork):
         self.df_test = None
 
     def run(self, config: dict):
-
         print(f"Starting {config['dataset']} data collection...")
         if config["domain"] == "vision":
             df_train = eval(
-                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_dataset(train=True, object_type='VisionData')"
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
+                f".load_dataset(train=True, object_type='VisionData')"
             )
             df_test = eval(
-                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_dataset(train=True, object_type='VisionData')"
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
+                f".load_dataset(train=True, object_type='VisionData')"
             )
         else:
             df_train, df_test = eval(
-                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_data(data_format='Dataframe')"
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
+                f".load_data(data_format='Dataframe')"
             )
         self.df_train = Payload(df_train)
         self.df_test = Payload(df_test)
@@ -60,7 +62,6 @@ class DataIntegrityCheck(L.LightningWork):
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
-
         print(f"Starting {config['dataset']} Data Integrity Check....")
         self.train_results_path, self.test_results_path = None, None
         self.processed = False
@@ -115,7 +116,6 @@ class TrainTestValidation(L.LightningWork):
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
-
         print(f"Starting {config['dataset']} train test validation suite...")
         self.results_path = None
         self.processed = False
@@ -166,7 +166,6 @@ class ModelEvaluation(L.LightningWork):
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
-
         print(f"Starting {config['dataset']} model evaluation suite...")
         self.results_path = None
         self.processed = False

@@ -90,7 +90,8 @@ class DeepchecksFlow(L.LightningFlow):
 def render_deepchecks_flow(state):
     st.title("Welcome to Deepchecks' Demo! :rocket:")
     st.caption(
-        "Deepchecks is a Python package for comprehensively validating your machine learning models and data with minimal effort. Test Suites for Validating ML Models & Data."
+        "Deepchecks is a Python package for comprehensively validating your machine learning models"
+        " and data with minimal effort. Test Suites for Validating ML Models & Data."
     )
 
     domain = st.sidebar.selectbox("Select a domain", DOMAINS, index=0)
