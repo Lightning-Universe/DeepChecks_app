@@ -5,6 +5,9 @@
 
 ⚡ Deepchecks App with [Lightning](https://lightning.ai) ⚡
 
+[![Lightning](https://img.shields.io/badge/-Lightning-792ee5?logo=pytorchlightning&logoColor=white)](https://lightning.ai)
+![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
+
 ______________________________________________________________________
 
 </div>
@@ -21,7 +24,6 @@ conda activate lightning_deepchecks
 
 git clone https://github.com/Lightning-AI/LAI-Deepchecks-App
 cd LAI-Deepchecks-App
-pip install -r requirements.txt
 pip install -e .
 
 ## To run the app locally
