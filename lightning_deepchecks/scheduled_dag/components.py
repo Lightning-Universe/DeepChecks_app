@@ -4,21 +4,12 @@ from datetime import datetime
 import lightning as L
 from deepchecks.tabular import Dataset
 from deepchecks.tabular.datasets.classification import adult
-from deepchecks.tabular.datasets.classification.adult import (
-    _CAT_FEATURES,
-    _target,
-    load_fitted_model,
-)
-from deepchecks.tabular.suites import (
-    data_integrity,
-    model_evaluation,
-    train_test_validation,
-)
+from deepchecks.tabular.datasets.classification.adult import _CAT_FEATURES, _target, load_fitted_model
+from deepchecks.tabular.suites import data_integrity, model_evaluation, train_test_validation
 from lightning.app.storage import Path, Payload
 
 
 class GetDataWork(L.LightningWork):
-
     """This component is responsible to download some data and store them with a PayLoad."""
 
     def __init__(self):
@@ -52,12 +43,8 @@ class DataIntegrityCheck(L.LightningWork):
         os.makedirs(self.dir_path, exist_ok=True)
 
         run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        train_results_path = os.path.join(
-            self.dir_path, f"train_integrity_{run_time}.html"
-        )
-        test_results_path = os.path.join(
-            self.dir_path, f"test_integrity_{run_time}.html"
-        )
+        train_results_path = os.path.join(self.dir_path, f"train_integrity_{run_time}.html")
+        test_results_path = os.path.join(self.dir_path, f"test_integrity_{run_time}.html")
 
         train_results.save_as_html(train_results_path)
         test_results.save_as_html(test_results_path)
@@ -83,15 +70,11 @@ class TrainTestValidation(L.LightningWork):
         os.makedirs(self.dir_path, exist_ok=True)
 
         run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        train_test_validation_results_path = os.path.join(
-            self.dir_path, f"train_test_validation_{run_time}.html"
-        )
+        train_test_validation_results_path = os.path.join(self.dir_path, f"train_test_validation_{run_time}.html")
 
         train_test_validation_results.save_as_html(train_test_validation_results_path)
 
-        self.train_test_validation_results_path = Path(
-            train_test_validation_results_path
-        )
+        self.train_test_validation_results_path = Path(train_test_validation_results_path)
         print("Finished train test validation suite.")
 
 
@@ -113,9 +96,7 @@ class ModelEvaluation(L.LightningWork):
         os.makedirs(self.dir_path, exist_ok=True)
 
         run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        evaluation_results_path = os.path.join(
-            self.dir_path, f"model_evaluation_{run_time}.html"
-        )
+        evaluation_results_path = os.path.join(self.dir_path, f"model_evaluation_{run_time}.html")
 
         evaluation_results.save_as_html(evaluation_results_path)
         self.evaluation_results_path = Path(evaluation_results_path)

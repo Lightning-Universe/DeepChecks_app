@@ -10,7 +10,6 @@ from lightning_deepchecks.scheduled_dag.components import (
 
 
 class DeepchecksDAG(L.LightningFlow):
-
     """This flow is a DAG with Deepchecks components."""
 
     def __init__(self, **dag_kwargs):

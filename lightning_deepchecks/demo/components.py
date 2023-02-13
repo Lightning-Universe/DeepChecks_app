@@ -3,11 +3,10 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 
-import deepchecks
 import lightning as L
 from deepchecks.tabular import Dataset
 from lightning.app import BuildConfig
-from lightning.app.storage import Path, Payload
+from lightning.app.storage import Payload
 
 
 @dataclass
@@ -21,7 +20,6 @@ class CustomBuildConfig(BuildConfig):
 
 
 class GetDataWork(L.LightningWork):
-
     """This component is responsible to download some data and store them with a PayLoad."""
 
     def __init__(self):
@@ -32,20 +30,20 @@ class GetDataWork(L.LightningWork):
         self.df_test = None
 
     def run(self, config: dict):
-        from deepchecks.tabular import datasets
-        from deepchecks.vision import datasets
-
         print(f"Starting {config['dataset']} data collection...")
         if config["domain"] == "vision":
             df_train = eval(
-                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_dataset(train=True, object_type='VisionData')"
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
+                f".load_dataset(train=True, object_type='VisionData')"
             )
             df_test = eval(
-                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_dataset(train=True, object_type='VisionData')"
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
+                f".load_dataset(train=True, object_type='VisionData')"
             )
         else:
             df_train, df_test = eval(
-                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}.load_data(data_format='Dataframe')"
+                f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
+                f".load_data(data_format='Dataframe')"
             )
         self.df_train = Payload(df_train)
         self.df_test = Payload(df_test)
@@ -64,16 +62,11 @@ class DataIntegrityCheck(L.LightningWork):
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
-        from deepchecks.tabular import datasets
-        from deepchecks.vision import datasets
-
         print(f"Starting {config['dataset']} Data Integrity Check....")
         self.train_results_path, self.test_results_path = None, None
         self.processed = False
 
-        deepchecks_suites_module = importlib.import_module(
-            f"deepchecks.{config['domain']}.suites"
-        )
+        deepchecks_suites_module = importlib.import_module(f"deepchecks.{config['domain']}.suites")
         deepchecks_module = importlib.import_module(
             f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
         )
@@ -97,12 +90,8 @@ class DataIntegrityCheck(L.LightningWork):
         os.makedirs(self.dir_path, exist_ok=True)
 
         run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        train_results_path = os.path.join(
-            self.dir_path, f"{config['dataset']}_train_integrity_{run_time}.html"
-        )
-        test_results_path = os.path.join(
-            self.dir_path, f"{config['dataset']}_test_integrity_{run_time}.html"
-        )
+        train_results_path = os.path.join(self.dir_path, f"{config['dataset']}_train_integrity_{run_time}.html")
+        test_results_path = os.path.join(self.dir_path, f"{config['dataset']}_test_integrity_{run_time}.html")
 
         train_results.save_as_html(train_results_path, as_widget=False)
         test_results.save_as_html(test_results_path, as_widget=False)
@@ -127,16 +116,11 @@ class TrainTestValidation(L.LightningWork):
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
-        from deepchecks.tabular import datasets
-        from deepchecks.vision import datasets
-
         print(f"Starting {config['dataset']} train test validation suite...")
         self.results_path = None
         self.processed = False
 
-        deepchecks_suites_module = importlib.import_module(
-            f"deepchecks.{config['domain']}.suites"
-        )
+        deepchecks_suites_module = importlib.import_module(f"deepchecks.{config['domain']}.suites")
         deepchecks_module = importlib.import_module(
             f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
         )
@@ -155,16 +139,12 @@ class TrainTestValidation(L.LightningWork):
                 cat_features=deepchecks_module._CAT_FEATURES,
             )
 
-        train_test_validation_results = (
-            deepchecks_suites_module.train_test_validation().run(df_train, df_test)
-        )
+        train_test_validation_results = deepchecks_suites_module.train_test_validation().run(df_train, df_test)
 
         os.makedirs(self.dir_path, exist_ok=True)
 
         run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        results_path = os.path.join(
-            self.dir_path, f"{config['dataset']}_train_test_validation_{run_time}.html"
-        )
+        results_path = os.path.join(self.dir_path, f"{config['dataset']}_train_test_validation_{run_time}.html")
 
         train_test_validation_results.save_as_html(results_path, as_widget=False)
 
@@ -186,24 +166,17 @@ class ModelEvaluation(L.LightningWork):
         self.processed = False
 
     def run(self, df_train: Payload, df_test: Payload, config: dict):
-        from deepchecks.tabular import datasets
-        from deepchecks.vision import datasets
-
         print(f"Starting {config['dataset']} model evaluation suite...")
         self.results_path = None
         self.processed = False
 
         if config["dataset"] == "coco":
             ## TODO: fix this
-            results = (
-                "<h1>Model Evaluation Suite for COCO dataset is not supported yet.</h1>"
-            )
+            results = "<h1>Model Evaluation Suite for COCO dataset is not supported yet.</h1>"
             os.makedirs(self.dir_path, exist_ok=True)
 
             run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            results_path = os.path.join(
-                self.dir_path, f"{config['dataset']}_model_evaluation_{run_time}.html"
-            )
+            results_path = os.path.join(self.dir_path, f"{config['dataset']}_model_evaluation_{run_time}.html")
             with open(results_path, "w") as file:
                 file.write(results)
 
@@ -213,9 +186,7 @@ class ModelEvaluation(L.LightningWork):
             print("Finished model evaluation suite.")
             return
 
-        deepchecks_suites_module = importlib.import_module(
-            f"deepchecks.{config['domain']}.suites"
-        )
+        deepchecks_suites_module = importlib.import_module(f"deepchecks.{config['domain']}.suites")
 
         deepchecks_module = importlib.import_module(
             f"deepchecks.{config['domain']}.datasets.{config['algo']}.{config['dataset']}"
@@ -238,16 +209,12 @@ class ModelEvaluation(L.LightningWork):
                 cat_features=deepchecks_module._CAT_FEATURES,
             )
 
-        evaluation_results = deepchecks_suites_module.model_evaluation().run(
-            df_train, df_test, model
-        )
+        evaluation_results = deepchecks_suites_module.model_evaluation().run(df_train, df_test, model)
 
         os.makedirs(self.dir_path, exist_ok=True)
 
         run_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        results_path = os.path.join(
-            self.dir_path, f"{config['dataset']}_model_evaluation_{run_time}.html"
-        )
+        results_path = os.path.join(self.dir_path, f"{config['dataset']}_model_evaluation_{run_time}.html")
 
         evaluation_results.save_as_html(results_path, as_widget=False)
         with open(results_path, encoding="utf-8") as f:
